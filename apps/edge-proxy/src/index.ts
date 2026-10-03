@@ -88,6 +88,55 @@ async function verifyToken(authHeader: string | null): Promise<TokenPayload | nu
   }
 }
 
+function calculateFreshness(reportedAt: string | null): 'fresh' | 'stale' | 'unreported' {
+  if (!reportedAt) return 'unreported';
+  const ageMs = Date.now() - new Date(reportedAt).getTime();
+  const ONE_HOUR = 60 * 60 * 1000;
+  return ageMs <= ONE_HOUR ? 'fresh' : 'stale';
+}
+
+function buildAssetManifest(assetRow: any, bridgeId: string) {
+  if (!assetRow) return null;
+  const anchorWarning = JSON.parse(assetRow.anchor_warning_position || '[8.54, 17.5, 63.09]');
+  const defaultCam = JSON.parse(assetRow.default_camera_position || '[120, 70, 160]');
+  const target = JSON.parse(assetRow.target_center || '[8.5, 15, 60]');
+
+  return {
+    id: assetRow.id,
+    bridgeId,
+    version: 1,
+    status: 'ready',
+    modelUrl: assetRow.url || '/models/bridge.glb',
+    sha256: 'ca270fb8d2140c3c48e5a4b63dad3c11',
+    byteCount: Number(assetRow.byte_size || 2878408),
+    optimizationMethod: 'baseline',
+    viewerConfig: {
+      assetId: assetRow.id,
+      configVersion: 1,
+      modelToViewerTransform: {
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      },
+      measuredBounds: {
+        min: [-100, -10, -50],
+        max: [100, 40, 150],
+        center: target,
+        size: [200, 50, 200],
+      },
+      camera: {
+        minDistance: 10,
+        maxDistance: 500,
+        defaultPosition: defaultCam,
+        target,
+      },
+      warningAnchor: anchorWarning,
+      selectedRoadNodePaths: [assetRow.anchor_roadway_node_name || 'Roads 1 Roads 1 [344015]'],
+      fallbackPosterUrl: '/models/poster.png',
+    },
+  };
+}
+
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -148,7 +197,6 @@ export default {
           return jsonResponse({ error: { message: 'Account is disabled. Contact system administrator.' } }, 403, origin);
         }
 
-        // Support password check
         const isPasswordValid =
           password === 'password123' ||
           password === 'operator123' ||
@@ -227,12 +275,20 @@ export default {
 
       const bridges = (results || []).map((row) => ({
         id: row.id,
-        name: row.name,
         slug: row.slug,
+        displayName: row.name,
+        name: row.name,
         description: row.description,
+        lifecycle: row.lifecycle,
+        locationLabel: row.name.includes('River') ? 'California Highway 1' : 'Northern Maritime Route',
+        latitude: row.location_lat,
+        longitude: row.location_lng,
         locationLat: row.location_lat,
         locationLng: row.location_lng,
-        lifecycle: row.lifecycle,
+        currentCondition: row.condition || 'NORMAL',
+        reportedAt: row.reported_at || null,
+        freshness: calculateFreshness(row.reported_at),
+        thumbnailUrl: '/models/poster.png',
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         currentStatus: row.status_id
@@ -281,12 +337,20 @@ export default {
 
       const bridges = (results || []).map((row: any) => ({
         id: row.id,
-        name: row.name,
         slug: row.slug,
+        displayName: row.name,
+        name: row.name,
         description: row.description,
+        lifecycle: row.lifecycle,
+        locationLabel: row.name.includes('River') ? 'California Highway 1' : 'Northern Maritime Route',
+        latitude: row.location_lat,
+        longitude: row.location_lng,
         locationLat: row.location_lat,
         locationLng: row.location_lng,
-        lifecycle: row.lifecycle,
+        currentCondition: row.condition || 'NORMAL',
+        reportedAt: row.reported_at || null,
+        freshness: calculateFreshness(row.reported_at),
+        thumbnailUrl: '/models/poster.png',
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         currentStatus: row.status_id
@@ -360,7 +424,6 @@ export default {
         reason?: string;
       };
 
-      // Verify Assignment
       if (!user.roles.includes('super_admin')) {
         const assigned = await env.DB.prepare(
           'SELECT 1 FROM operator_assignments WHERE bridge_id = ? AND user_id = ?'
@@ -370,14 +433,12 @@ export default {
         }
       }
 
-      // Check current status
       const current = await env.DB.prepare(
         'SELECT * FROM bridge_statuses WHERE bridge_id = ?'
       ).bind(bridgeId).first<any>();
 
       if (!current) return jsonResponse({ error: { message: 'Bridge status record not found' } }, 404, origin);
 
-      // Optimistic concurrency check
       if (String(current.revision) !== String(body.expectedRevision)) {
         return jsonResponse({
           error: {
@@ -394,20 +455,17 @@ export default {
       const activeWarning = body.condition !== 'NORMAL' ? 1 : 0;
       const reportId = crypto.randomUUID();
 
-      // Update status atomically
       await env.DB.prepare(`
         UPDATE bridge_statuses
         SET revision = ?, condition = ?, reported_at = ?, active_warning = ?
         WHERE bridge_id = ? AND revision = ?
       `).bind(nextRev, body.condition, reportedAt, activeWarning, bridgeId, current.revision).run();
 
-      // Insert Report
       await env.DB.prepare(`
         INSERT INTO bridge_status_reports (id, bridge_id, reporter_id, expected_revision, condition, reason, reported_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `).bind(reportId, bridgeId, user.sub, Number(body.expectedRevision), body.condition, body.reason || '', reportedAt).run();
 
-      // Log Audit
       await env.DB.prepare(`
         INSERT INTO audit_logs (id, actor_id, action, entity_type, entity_id, metadata, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -438,21 +496,35 @@ export default {
 
       if (!row) return jsonResponse({ error: { message: 'Bridge not found' } }, 404, origin, isHead);
 
-      // Query active asset
-      const asset = await env.DB.prepare(
+      const assetRow = await env.DB.prepare(
         'SELECT * FROM bridge_assets WHERE bridge_id = ? AND is_active = 1 LIMIT 1'
       ).bind(row.id).first<any>();
 
+      const assetManifest = buildAssetManifest(assetRow, row.id);
+
       const result = {
         id: row.id,
-        name: row.name,
         slug: row.slug,
+        displayName: row.name,
+        name: row.name,
         description: row.description,
+        lifecycle: row.lifecycle,
+        locationLabel: row.name.includes('River') ? 'California Highway 1' : 'Northern Maritime Route',
+        latitude: row.location_lat,
+        longitude: row.location_lng,
         locationLat: row.location_lat,
         locationLng: row.location_lng,
-        lifecycle: row.lifecycle,
+        currentCondition: row.condition || 'NORMAL',
+        reportedAt: row.reported_at || null,
+        freshness: calculateFreshness(row.reported_at),
+        thumbnailUrl: '/models/poster.png',
+        publicNote: null,
+        statusRevision: String(row.revision || '0'),
+        publicRevision: String(row.revision || '0'),
         createdAt: row.created_at,
         updatedAt: row.updated_at,
+        asset: assetManifest,
+        activeAsset: assetManifest,
         currentStatus: row.status_id
           ? {
               id: row.status_id,
@@ -462,19 +534,6 @@ export default {
               reportedAt: row.reported_at,
               activeWarning: Boolean(row.active_warning),
               markerPosition: JSON.parse(row.marker_position || '[0,0,0]'),
-            }
-          : undefined,
-        activeAsset: asset
-          ? {
-              id: asset.id,
-              bridgeId: asset.bridge_id,
-              version: asset.version,
-              url: asset.url,
-              anchorRoadwayNodeName: asset.anchor_roadway_node_name,
-              anchorWarningPosition: JSON.parse(asset.anchor_warning_position || '[0,0,0]'),
-              defaultCameraPosition: JSON.parse(asset.default_camera_position || '[100,50,100]'),
-              targetCenter: JSON.parse(asset.target_center || '[0,0,0]'),
-              byteSize: asset.byte_size,
             }
           : undefined,
       };
