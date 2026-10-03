@@ -1,0 +1,26 @@
+{
+  "name": "@bridge/worker",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/worker.ts",
+  "scripts": {
+    "dev": "tsx watch src/worker.ts",
+    "start": "tsx src/worker.ts",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@bridge/contracts": "workspace:*",
+    "@bridge/database": "workspace:*",
+    "@bridge/domain": "workspace:*",
+    "@bridge/observability": "workspace:*",
+    "dotenv": "^16.4.7",
+    "ioredis": "^5.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  }
+}
