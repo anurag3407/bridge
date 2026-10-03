@@ -3,6 +3,13 @@
   "name": "bridge-sayalabs-proxy",
   "main": "src/index.ts",
   "compatibility_date": "2024-04-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bridge-db",
+      "database_id": "adc362bb-5895-4c7d-804d-2157419d1436"
+    }
+  ],
   "routes": [
     {
       "pattern": "bridge.sayalabs.in/*",

@@ -2,10 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { setStoredToken } from '../../../lib/api';
+import { setStoredToken, API_BASE_URL } from '../../../lib/api';
 import { Shield, KeyRound, AlertCircle, Loader2, UserCheck } from 'lucide-react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
 export default function LoginPage() {
   const router = useRouter();

@@ -1,6 +1,10 @@
 import { BridgeApiClient } from '@bridge/api-client';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? ''
+    : 'http://localhost:4000');
 
 export function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null;
