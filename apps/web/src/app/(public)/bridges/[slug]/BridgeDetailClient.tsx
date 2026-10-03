@@ -45,6 +45,19 @@ export default function BridgeDetailClient() {
     refetch: refetchStatus,
   } = useBridgeStatus({
     bridgeId: bridge?.id || '',
+    initialStatus: bridge
+      ? {
+          bridgeId: bridge.id,
+          condition: bridge.currentCondition,
+          statusRevision: bridge.statusRevision || '0',
+          publicRevision: bridge.publicRevision || '0',
+          reportedAt: bridge.reportedAt || new Date().toISOString(),
+          publicNote: bridge.publicNote || null,
+          isPublished: bridge.lifecycle === 'published',
+          freshness: bridge.freshness || 'fresh',
+          observedAt: bridge.reportedAt || new Date().toISOString(),
+        }
+      : null,
     pollingIntervalMs: 10000,
   });
 

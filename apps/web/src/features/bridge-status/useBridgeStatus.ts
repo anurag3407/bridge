@@ -38,6 +38,9 @@ export function useBridgeStatus({
   currentRevisionRef.current = status?.statusRevision || '0';
 
   const fetchLatest = useCallback(async () => {
+    // Guard against empty bridgeId
+    if (!bridgeId) return;
+
     try {
       const latest = await apiClient.getBridgeStatus(bridgeId);
 
@@ -46,8 +49,10 @@ export function useBridgeStatus({
 
       setStatus((prev) => {
         if (!prev) return latest;
+        const nextRev = latest.statusRevision || (latest as any).revision || '0';
+        const prevRev = prev.statusRevision || (prev as any).revision || '0';
         // Monotonic revision check: only advance or refresh if newer or equal
-        if (compareRevisions(latest.statusRevision, prev.statusRevision) >= 0) {
+        if (compareRevisions(nextRev, prevRev) >= 0) {
           return latest;
         }
         return prev;
@@ -65,27 +70,31 @@ export function useBridgeStatus({
 
   // Initial fetch if needed
   useEffect(() => {
-    fetchLatest();
-  }, [fetchLatest]);
+    if (bridgeId) {
+      fetchLatest();
+    }
+  }, [fetchLatest, bridgeId]);
 
   // Polling fallback loop
   useEffect(() => {
+    if (!bridgeId) return;
     const timer = setInterval(() => {
       fetchLatest();
     }, pollingIntervalMs);
 
     return () => clearInterval(timer);
-  }, [fetchLatest, pollingIntervalMs]);
+  }, [fetchLatest, pollingIntervalMs, bridgeId]);
 
   // Window focus refetch
   useEffect(() => {
+    if (!bridgeId) return;
     const handleFocus = () => {
       fetchLatest();
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [fetchLatest]);
+  }, [fetchLatest, bridgeId]);
 
   const freshness: FreshnessStateType = status
     ? calculateFreshness(status.condition, status.reportedAt)

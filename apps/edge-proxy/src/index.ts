@@ -382,10 +382,16 @@ export default {
       return jsonResponse({
         id: s.id,
         bridgeId: s.bridge_id,
-        revision: String(s.revision),
-        condition: s.condition,
-        reportedAt: s.reported_at,
+        statusRevision: String(s.revision ?? '0'),
+        revision: String(s.revision ?? '0'),
+        publicRevision: String(s.revision ?? '0'),
+        condition: s.condition || 'NORMAL',
+        reportedAt: s.reported_at || new Date().toISOString(),
+        observedAt: s.reported_at || new Date().toISOString(),
         activeWarning: Boolean(s.active_warning),
+        isPublished: true,
+        freshness: calculateFreshness(s.reported_at),
+        publicNote: null,
         markerPosition: JSON.parse(s.marker_position || '[0,0,0]'),
       }, 200, origin, isHead);
     }
@@ -474,10 +480,16 @@ export default {
       return jsonResponse({
         id: current.id,
         bridgeId,
+        statusRevision: String(nextRev),
         revision: String(nextRev),
+        publicRevision: String(nextRev),
         condition: body.condition,
         reportedAt,
+        observedAt: reportedAt,
         activeWarning: Boolean(activeWarning),
+        isPublished: true,
+        freshness: 'fresh',
+        publicNote: body.reason || null,
         markerPosition: JSON.parse(current.marker_position || '[0,0,0]'),
       }, 201, origin);
     }
