@@ -97,9 +97,9 @@ function calculateFreshness(reportedAt: string | null): 'fresh' | 'stale' | 'unr
 
 function buildAssetManifest(assetRow: any, bridgeId: string) {
   if (!assetRow) return null;
-  const anchorWarning = JSON.parse(assetRow.anchor_warning_position || '[8.54, 17.5, 63.09]');
-  const defaultCam = JSON.parse(assetRow.default_camera_position || '[120, 70, 160]');
-  const target = JSON.parse(assetRow.target_center || '[8.5, 15, 60]');
+  const anchorWarning = JSON.parse(assetRow.anchor_warning_position || '[0.0, 9.2, 18.0]');
+  const defaultCam = JSON.parse(assetRow.default_camera_position || '[48, 28, 65]');
+  const target = JSON.parse(assetRow.target_center || '[0, 5, 11]');
 
   return {
     id: assetRow.id,
@@ -108,7 +108,7 @@ function buildAssetManifest(assetRow: any, bridgeId: string) {
     status: 'ready',
     modelUrl: assetRow.url || '/models/bridge.glb',
     sha256: 'ca270fb8d2140c3c48e5a4b63dad3c11',
-    byteCount: Number(assetRow.byte_size || 2878408),
+    byteCount: Number(assetRow.byte_size || 15125480),
     optimizationMethod: 'baseline',
     viewerConfig: {
       assetId: assetRow.id,
@@ -119,19 +119,19 @@ function buildAssetManifest(assetRow: any, bridgeId: string) {
         scale: [1, 1, 1],
       },
       measuredBounds: {
-        min: [-100, -10, -50],
-        max: [100, 40, 150],
+        min: [-13.15, -11.80, -53.88],
+        max: [12.55, 8.92, 75.95],
         center: target,
-        size: [200, 50, 200],
+        size: [25.71, 20.72, 129.83],
       },
       camera: {
-        minDistance: 10,
-        maxDistance: 500,
+        minDistance: 5,
+        maxDistance: 400,
         defaultPosition: defaultCam,
         target,
       },
       warningAnchor: anchorWarning,
-      selectedRoadNodePaths: [assetRow.anchor_roadway_node_name || 'Roads 1 Roads 1 [344015]'],
+      selectedRoadNodePaths: [assetRow.anchor_roadway_node_name || 'Bridge_Road_Deck'],
       fallbackPosterUrl: '/models/poster.png',
     },
   };

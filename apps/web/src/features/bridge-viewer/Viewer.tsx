@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Environment } from '@react-three/drei';
+import * as THREE from 'three';
 import { Model } from './Model';
 import { WarningMarker } from './WarningMarker';
 import { ViewerConfig, BridgeConditionType } from '@bridge/contracts';
@@ -21,6 +22,20 @@ export function Viewer({ modelUrl, condition, viewerConfig, className = '' }: Vi
   const controlsRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Dynamic camera framing tailored to the bridge model
+  const isLegacyConfig =
+    !viewerConfig?.camera?.defaultPosition ||
+    viewerConfig.camera.defaultPosition[0] > 90 ||
+    viewerConfig.camera.target[2] < -20;
+
+  const defaultBridgeCam: [number, number, number] = [48, 28, 65];
+  const defaultBridgeTarget: [number, number, number] = [0, 5, 11];
+  const defaultBridgeWarning: [number, number, number] = [0.0, 9.2, 18.0];
+
+  const cameraPos = isLegacyConfig ? defaultBridgeCam : viewerConfig.camera.defaultPosition;
+  const cameraTarget = isLegacyConfig ? defaultBridgeTarget : viewerConfig.camera.target;
+  const warningAnchor = isLegacyConfig ? defaultBridgeWarning : viewerConfig.warningAnchor;
+
   useEffect(() => {
     try {
       const canvas = document.createElement('canvas');
@@ -35,9 +50,8 @@ export function Viewer({ modelUrl, condition, viewerConfig, className = '' }: Vi
 
   const handleResetCamera = () => {
     if (controlsRef.current) {
-      const cam = viewerConfig.camera;
       controlsRef.current.reset();
-      controlsRef.current.target.set(cam.target[0], cam.target[1], cam.target[2]);
+      controlsRef.current.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
     }
   };
 
@@ -62,10 +76,6 @@ export function Viewer({ modelUrl, condition, viewerConfig, className = '' }: Vi
     );
   }
 
-  const cameraPos = viewerConfig.camera.defaultPosition;
-  const cameraTarget = viewerConfig.camera.target;
-  const warningAnchor = viewerConfig.warningAnchor;
-
   return (
     <div
       ref={containerRef}
@@ -79,15 +89,52 @@ export function Viewer({ modelUrl, condition, viewerConfig, className = '' }: Vi
           position: [cameraPos[0], cameraPos[1], cameraPos[2]],
           fov: 45,
           near: 0.5,
-          far: 3000,
+          far: 2000,
         }}
-        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+        gl={{
+          antialias: true,
+          alpha: false,
+          powerPreference: 'high-performance',
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.15,
+        }}
+        shadows
       >
-        <color attach="background" args={['#090d16']} />
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[150, 250, 150]} intensity={1.5} castShadow />
-        <directionalLight position={[-150, 100, -150]} intensity={0.5} />
-        <hemisphereLight intensity={0.4} groundColor="#1e293b" />
+        <color attach="background" args={['#080f1d']} />
+        <fog attach="fog" args={['#080f1d', 90, 420]} />
+
+        {/* Environmental IBL Reflections */}
+        <Environment preset="city" />
+
+        {/* Realistic Natural Sun & Sky Lighting */}
+        <ambientLight intensity={0.45} color="#e0f2fe" />
+        <directionalLight
+          position={[70, 110, 50]}
+          intensity={2.2}
+          color="#fffbeb"
+          castShadow
+          shadow-mapSize={[2048, 2048]}
+          shadow-camera-left={-75}
+          shadow-camera-right={75}
+          shadow-camera-top={75}
+          shadow-camera-bottom={-75}
+          shadow-camera-near={10}
+          shadow-camera-far={260}
+          shadow-bias={-0.0005}
+        />
+        <directionalLight position={[-60, 45, -50]} intensity={0.7} color="#7dd3fc" />
+        <hemisphereLight intensity={0.45} color="#e2e8f0" groundColor="#081829" />
+
+        {/* River Water Surface Under Bridge */}
+        <mesh position={[0, -11.6, 11]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <planeGeometry args={[800, 800]} />
+          <meshStandardMaterial
+            color="#091b2c"
+            roughness={0.12}
+            metalness={0.88}
+            envMapIntensity={1.5}
+          />
+        </mesh>
 
         <Suspense fallback={null}>
           <Model
@@ -104,11 +151,11 @@ export function Viewer({ modelUrl, condition, viewerConfig, className = '' }: Vi
         <OrbitControls
           ref={controlsRef}
           target={[cameraTarget[0], cameraTarget[1], cameraTarget[2]]}
-          minDistance={viewerConfig.camera.minDistance}
-          maxDistance={viewerConfig.camera.maxDistance}
+          minDistance={viewerConfig?.camera?.minDistance || 5}
+          maxDistance={viewerConfig?.camera?.maxDistance || 400}
           enableDamping
           dampingFactor={0.05}
-          maxPolarAngle={Math.PI / 2 + 0.05} // Restrain looking strictly below ground
+          maxPolarAngle={Math.PI / 2 - 0.02} // Stop camera at water horizon
         />
       </Canvas>
 

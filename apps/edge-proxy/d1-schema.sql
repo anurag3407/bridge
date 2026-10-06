@@ -83,7 +83,7 @@ INSERT OR REPLACE INTO bridge_statuses (id, bridge_id, revision, condition, repo
 
 -- Seed 3D Assets
 INSERT OR REPLACE INTO bridge_assets (id, bridge_id, version, url, anchor_roadway_node_name, anchor_warning_position, default_camera_position, target_center, byte_size, is_active) VALUES
-('a1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', '1.0.0', '/models/bridge.glb', 'Roads 1 Roads 1 [344015]', '[8.54, 17.5, 63.09]', '[120, 70, 160]', '[8.5, 15, 60]', 2878408, 1);
+('a1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', '1.0.0', '/models/bridge.glb', 'Bridge_Road_Deck', '[0.0, 9.2, 18.0]', '[48, 28, 65]', '[0, 5, 11]', 15125480, 1);
 
 -- Seed User Profiles
 -- password_hash for 'operator123' and 'admin123'

@@ -152,10 +152,10 @@ VALUES (
   '99999999-9999-9999-9999-999999999999',
   1,
   '{"position": [0, 0, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]}'::jsonb,
-  '{"min": [-108.91, -131.23, -416.87], "max": [153.56, 57.44, 308.20], "center": [22.32, -36.89, -54.33], "size": [262.47, 188.68, 725.07]}'::jsonb,
-  '{"minDistance": 10, "maxDistance": 1500, "defaultPosition": [120, 100, 220], "target": [22.32, 10, -54.33]}'::jsonb,
-  '[8.54, 17.5, 63.09]'::jsonb,
-  '["Roads 1 Roads 1 [344015]"]'::jsonb,
+  '{"min": [-13.15, -11.80, -53.88], "max": [12.55, 8.92, 75.95], "center": [-0.30, -1.44, 11.03], "size": [25.71, 20.72, 129.83]}'::jsonb,
+  '{"minDistance": 5, "maxDistance": 400, "defaultPosition": [48, 28, 65], "target": [0, 5, 11]}'::jsonb,
+  '[0.0, 9.2, 18.0]'::jsonb,
+  '["Bridge_Road_Deck"]'::jsonb,
   '/models/bridge_poster.webp'
 )
 ON CONFLICT DO NOTHING;
