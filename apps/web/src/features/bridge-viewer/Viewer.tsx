@@ -100,17 +100,17 @@ export function Viewer({ modelUrl, condition, viewerConfig, className = '' }: Vi
         }}
         shadows
       >
-        <color attach="background" args={['#080f1d']} />
-        <fog attach="fog" args={['#080f1d', 90, 420]} />
+        <color attach="background" args={['#0a1324']} />
+        <fog attach="fog" args={['#0a1324', 110, 480]} />
 
         {/* Environmental IBL Reflections */}
         <Environment preset="city" />
 
         {/* Realistic Natural Sun & Sky Lighting */}
-        <ambientLight intensity={0.45} color="#e0f2fe" />
+        <ambientLight intensity={0.9} color="#f8fafc" />
         <directionalLight
           position={[70, 110, 50]}
-          intensity={2.2}
+          intensity={2.0}
           color="#fffbeb"
           castShadow
           shadow-mapSize={[2048, 2048]}
@@ -120,19 +120,21 @@ export function Viewer({ modelUrl, condition, viewerConfig, className = '' }: Vi
           shadow-camera-bottom={-75}
           shadow-camera-near={10}
           shadow-camera-far={260}
-          shadow-bias={-0.0005}
+          shadow-bias={-0.0003}
         />
-        <directionalLight position={[-60, 45, -50]} intensity={0.7} color="#7dd3fc" />
-        <hemisphereLight intensity={0.45} color="#e2e8f0" groundColor="#081829" />
+        {/* Soft fill lights from opposite side and under-angles to illuminate shadowed geometry */}
+        <directionalLight position={[-60, 55, -60]} intensity={1.2} color="#cbeafe" />
+        <directionalLight position={[30, 30, -50]} intensity={0.6} color="#dbeafe" />
+        <hemisphereLight intensity={0.7} color="#f1f5f9" groundColor="#1e293b" />
 
         {/* River Water Surface Under Bridge */}
         <mesh position={[0, -11.6, 11]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <planeGeometry args={[800, 800]} />
+          <planeGeometry args={[1000, 1000]} />
           <meshStandardMaterial
-            color="#091b2c"
-            roughness={0.12}
-            metalness={0.88}
-            envMapIntensity={1.5}
+            color="#0a1d30"
+            roughness={0.35}
+            metalness={0.25}
+            envMapIntensity={0.8}
           />
         </mesh>
 
