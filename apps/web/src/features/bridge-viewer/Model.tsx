@@ -90,7 +90,30 @@ export function Model({ url, condition, selectedRoadNodes }: ModelProps) {
       envMapIntensity: 0.7,
     });
 
-    // 8. Vehicle Materials (High-gloss automotive clearcoat red paint)
+    // 8. Natural River Gorge Earth & Terrain
+    const terrainMaterial = new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#38332d'),
+      roughness: 0.88,
+      metalness: 0.05,
+      envMapIntensity: 0.4,
+    });
+
+    // 9. Road Deck Curbs & Barrier Edges
+    const curbMaterial = new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#cbd5e1'),
+      roughness: 0.68,
+      metalness: 0.05,
+      envMapIntensity: 0.7,
+    });
+
+    // 10. Neoprene Bearing Pads / Expansion Joints
+    const neopreneMaterial = new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#141416'),
+      roughness: 0.90,
+      metalness: 0.05,
+    });
+
+    // 11. Vehicle Materials (High-gloss automotive clearcoat red paint)
     const carPaintMaterial = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color('#dc2626'),
       roughness: 0.15,
@@ -101,7 +124,7 @@ export function Model({ url, condition, selectedRoadNodes }: ModelProps) {
       envMapIntensity: 1.6,
     });
 
-    // 9. Automotive Tinted Glass / Windows
+    // 12. Automotive Tinted Glass / Windows
     const carGlassMaterial = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color('#0f172a'),
       roughness: 0.05,
@@ -111,7 +134,7 @@ export function Model({ url, condition, selectedRoadNodes }: ModelProps) {
       envMapIntensity: 2.0,
     });
 
-    // 10. Machined Chrome/Alloy Wheels & Rims
+    // 13. Machined Chrome/Alloy Wheels & Rims
     const carWheelsMaterial = new THREE.MeshStandardMaterial({
       color: new THREE.Color('#f8fafc'),
       roughness: 0.16,
@@ -119,14 +142,14 @@ export function Model({ url, condition, selectedRoadNodes }: ModelProps) {
       envMapIntensity: 1.8,
     });
 
-    // 11. Matte Vulcanized Rubber Tires & Undercarriage
+    // 14. Matte Vulcanized Rubber Tires & Undercarriage
     const carTiresMaterial = new THREE.MeshStandardMaterial({
       color: new THREE.Color('#18181b'),
       roughness: 0.92,
       metalness: 0.05,
     });
 
-    // 12. Dark Automotive Mirror & Door Trim
+    // 15. Dark Automotive Mirror & Door Trim
     const carTrimMaterial = new THREE.MeshStandardMaterial({
       color: new THREE.Color('#220507'),
       roughness: 0.30,
@@ -140,37 +163,44 @@ export function Model({ url, condition, selectedRoadNodes }: ModelProps) {
         mesh.receiveShadow = true;
 
         const nameLower = mesh.name.toLowerCase();
+        const matName = (((mesh.material as THREE.Material)?.name) || '').toLowerCase();
+        const check = (pattern: string) => nameLower.includes(pattern) || matName.includes(pattern);
 
-        // Check road deck
+        // Check road deck (carriageway asphalt)
         const isRoad =
-          nameLower.includes('road') ||
+          check('road') ||
+          check('screed') ||
           (selectedRoadNodes && selectedRoadNodes.some((n) => mesh.name.includes(n)));
 
         if (isRoad) {
           mesh.material = roadMaterial;
-        } else if (nameLower.includes('tower')) {
+        } else if (check('earth') || check('ground') || check('terrain')) {
+          mesh.material = terrainMaterial;
+        } else if (check('curb') || check('c10') || check('walkway') || check('deck_element')) {
+          mesh.material = curbMaterial;
+        } else if (check('neopren') || check('bearing')) {
+          mesh.material = neopreneMaterial;
+        } else if (check('tower') || (check('concrete') && check('cast-in-place concrete'))) {
           mesh.material = towerMaterial;
-        } else if (nameLower.includes('pier') || nameLower.includes('substructure') || nameLower.includes('pile')) {
+        } else if (check('pier') || check('substructure') || check('pile') || check('gray') || check('pcc')) {
           mesh.material = substructureMaterial;
-        } else if (nameLower.includes('girder')) {
+        } else if (check('girder')) {
           mesh.material = girderMaterial;
-        } else if (nameLower.includes('truss') || nameLower.includes('framing')) {
+        } else if (check('truss') || check('framing') || check('structural columns') || check('column')) {
           mesh.material = trussMaterial;
-        } else if (nameLower.includes('guardrail') || nameLower.includes('barrier')) {
+        } else if (check('guardrail') || check('barrier')) {
           mesh.material = guardrailMaterial;
-        } else if (nameLower.includes('walkway') || nameLower.includes('curb') || nameLower.includes('deck_element')) {
-          mesh.material = walkwayMaterial;
-        } else if (nameLower.includes('car_paint') || nameLower.includes('562479')) {
+        } else if (check('car_paint') || check('562479') || check('clio 12') || check('clio 11') || check('clio 10')) {
           mesh.material = carPaintMaterial;
-        } else if (nameLower.includes('car_glass') || nameLower.includes('562497')) {
+        } else if (check('car_glass') || check('562497') || check('clio 4')) {
           mesh.material = carGlassMaterial;
-        } else if (nameLower.includes('car_wheel') || nameLower.includes('562512')) {
+        } else if (check('car_wheel') || check('562512') || check('clio 8') || check('clio 6')) {
           mesh.material = carWheelsMaterial;
-        } else if (nameLower.includes('car_chassis') || nameLower.includes('car_tire') || nameLower.includes('562468')) {
+        } else if (check('car_chassis') || check('car_tire') || check('562468') || check('clio 9')) {
           mesh.material = carTiresMaterial;
-        } else if (nameLower.includes('car_mirror') || nameLower.includes('car_trim') || nameLower.includes('562501')) {
+        } else if (check('car_mirror') || check('car_trim') || check('562501') || check('clio 1') || check('clio 2') || check('clio 3') || check('clio 5') || check('clio 7')) {
           mesh.material = carTrimMaterial;
-        } else if (nameLower.includes('car')) {
+        } else if (check('car')) {
           mesh.material = carPaintMaterial;
         } else if (!mesh.material || (Array.isArray(mesh.material) && mesh.material.length === 0)) {
           mesh.material = towerMaterial;
